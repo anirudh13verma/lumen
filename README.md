@@ -2,7 +2,7 @@
 
 An open-source Android media library app: point it at folders on your device and it organises your movies and shows into a clean, poster-driven library. Think Nova Video Player's job with a modern interface, and a theme you can actually make your own.
 
-> **Status: early development.** Milestone 1 (app shell + theming) is in place. Scanning, metadata and playback are not built yet.
+> **Status: early development.** The app shell, theming and local folder scanning work. Metadata, posters and playback are not built yet.
 
 ## Goals
 
@@ -14,7 +14,7 @@ An open-source Android media library app: point it at folders on your device and
 ## Roadmap
 
 1. [x] App shell, navigation, seed-colour theming
-2. [ ] Folder picking, file discovery, Room database
+2. [x] Folder picking, incremental background scanning, Room database
 3. [ ] Filename parser and TMDB metadata matching
 4. [ ] Home, library, movie and show detail screens with real data
 5. [ ] Player (libmpv or Media3 behind a small `Player` interface)
@@ -36,11 +36,13 @@ Or open the folder in Android Studio and run the `app` configuration.
 ```
 app/src/main/java/app/lumen/
   data/settings/   DataStore-backed user settings (theme)
+  data/db/         Room database: folders and scanned video files
+  data/scan/       SAF folder walker, WorkManager scan job, video-file rules
+  data/            LibraryRepository (add/remove folders, incremental sync)
   ui/theme/        Seed-colour -> Material 3 colour scheme
   ui/navigation/   Bottom-bar destinations
-  ui/home|library|settings/   Screens
+  ui/home|library|settings/   Screens and view models
   ui/components/   Shared composables
-  ui/sample/       Placeholder data, to be removed once the scanner lands
 ```
 
 ## Metadata and API keys (planned)

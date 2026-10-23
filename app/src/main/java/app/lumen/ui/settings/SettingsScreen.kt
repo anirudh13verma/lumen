@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
@@ -44,6 +45,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import app.lumen.R
+import app.lumen.data.model.LibraryFolder
+import app.lumen.data.scan.ScanState
 import app.lumen.data.settings.ThemeMode
 import app.lumen.data.settings.ThemeSettings
 import app.lumen.ui.theme.SeedPresets
@@ -57,6 +60,11 @@ fun SettingsScreen(
     onHueCommit: () -> Unit,
     onAmoledChange: (Boolean) -> Unit,
     onSystemColorsChange: (Boolean) -> Unit,
+    folders: List<LibraryFolder>,
+    scan: ScanState,
+    onAddFolder: () -> Unit,
+    onRemoveFolder: (LibraryFolder) -> Unit,
+    onRescan: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val supportsSystemColors = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
@@ -73,6 +81,16 @@ fun SettingsScreen(
             text = stringResource(R.string.settings_title),
             style = MaterialTheme.typography.headlineMedium,
         )
+
+        LibrarySettingsSection(
+            folders = folders,
+            scan = scan,
+            onAddFolder = onAddFolder,
+            onRemoveFolder = onRemoveFolder,
+            onRescan = onRescan,
+        )
+
+        HorizontalDivider()
 
         SectionLabel(stringResource(R.string.settings_appearance))
 

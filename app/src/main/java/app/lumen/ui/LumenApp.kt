@@ -1,15 +1,23 @@
 package app.lumen.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -19,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import app.lumen.data.settings.ThemeSettings
 import app.lumen.ui.home.HomeScreen
 import app.lumen.ui.library.LibraryScreen
+import app.lumen.ui.library.LibraryViewModel
 import app.lumen.ui.navigation.Destination
 import app.lumen.ui.settings.SettingsScreen
 import app.lumen.ui.settings.SettingsViewModel
@@ -27,12 +36,33 @@ import app.lumen.ui.settings.SettingsViewModel
 fun LumenApp(
     settings: ThemeSettings,
     settingsViewModel: SettingsViewModel,
+    libraryViewModel: LibraryViewModel,
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
 
+    val library by libraryViewModel.uiState.collectAsStateWithLifecycle()
+    val message by libraryViewModel.message.collectAsStateWithLifecycle()
+
+    // The system folder picker. The result is a persistable tree URI the repository stores.
+    val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) libraryViewModel.addFolder(uri)
+    }
+    val onAddFolder: () -> Unit = { folderPicker.launch(null) }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    LaunchedEffect(message) {
+        val pending = message
+        if (pending != null) {
+            snackbarHostState.showSnackbar(context.getString(pending))
+            libraryViewModel.messageShown()
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             NavigationBar {
                 Destination.entries.forEach { destination ->
@@ -63,8 +93,12 @@ fun LumenApp(
             startDestination = Destination.Home.route,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(Destination.Home.route) { HomeScreen() }
-            composable(Destination.Library.route) { LibraryScreen() }
+            composable(Destination.Home.route) {
+                HomeScreen(state = library, onAddFolder = onAddFolder)
+            }
+            composable(Destination.Library.route) {
+                LibraryScreen(state = library, onAddFolder = onAddFolder)
+            }
             composable(Destination.Settings.route) {
                 SettingsScreen(
                     settings = settings,
@@ -74,6 +108,11 @@ fun LumenApp(
                     onHueCommit = settingsViewModel::commitPreviewSeedColor,
                     onAmoledChange = settingsViewModel::setAmoled,
                     onSystemColorsChange = settingsViewModel::setUseSystemColors,
+                    folders = library.folders,
+                    scan = library.scan,
+                    onAddFolder = onAddFolder,
+                    onRemoveFolder = libraryViewModel::removeFolder,
+                    onRescan = libraryViewModel::rescan,
                 )
             }
         }

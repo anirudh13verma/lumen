@@ -4,14 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,75 +16,75 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.lumen.R
-import app.lumen.ui.components.ContinueWatchingCard
+import app.lumen.data.scan.ScanState
+import app.lumen.ui.components.EmptyLibraryCard
 import app.lumen.ui.components.PosterCard
-import app.lumen.ui.sample.SampleContinueWatching
-import app.lumen.ui.sample.SampleRecentlyAdded
+import app.lumen.ui.components.ScanStatusCard
+import app.lumen.ui.components.rememberFileSize
+import app.lumen.ui.library.LibraryUiState
+
+private const val RecentlyAddedLimit = 20
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
+fun HomeScreen(
+    state: LibraryUiState,
+    onAddFolder: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (!state.loaded) return
+
+    val scan = state.scan
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-            ) {
-                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (state.folders.isEmpty()) {
+            item {
+                EmptyLibraryCard(
+                    onAddFolder = onAddFolder,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
+            return@LazyColumn
+        }
+
+        if (scan is ScanState.Scanning) {
+            item { ScanStatusCard(scan, Modifier.padding(horizontal = 16.dp)) }
+        }
+
+        if (state.files.isNotEmpty()) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = stringResource(R.string.home_empty_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        text = stringResource(R.string.home_recently_added),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
-                    Text(
-                        text = stringResource(R.string.home_empty_body),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(state.files.take(RecentlyAddedLimit), key = { it.uri }) { file ->
+                            PosterCard(
+                                title = file.title,
+                                subtitle = rememberFileSize(file.sizeBytes),
+                                modifier = Modifier.width(120.dp),
+                            )
+                        }
+                    }
                 }
             }
-        }
-
-        item {
-            Section(title = stringResource(R.string.home_continue_watching)) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(SampleContinueWatching) { ContinueWatchingCard(it) }
-                }
+        } else if (scan !is ScanState.Scanning) {
+            item {
+                Text(
+                    text = stringResource(R.string.library_no_videos),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
             }
         }
-
-        item {
-            Section(title = stringResource(R.string.home_recently_added)) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(SampleRecentlyAdded) { PosterCard(it, Modifier.width(120.dp)) }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun Section(
-    title: String,
-    content: @Composable () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(horizontal = 16.dp),
-        )
-        content()
     }
 }

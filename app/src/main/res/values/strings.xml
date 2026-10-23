@@ -6,20 +6,34 @@
     <string name="nav_library">Library</string>
     <string name="nav_settings">Settings</string>
 
-    <!-- Home -->
-    <string name="home_continue_watching">Continue watching</string>
-    <string name="home_recently_added">Recently added</string>
-    <string name="home_empty_title">Your library is empty</string>
-    <string name="home_empty_body">Folder scanning arrives in the next milestone. Until then these are sample cards, so you can try out the theme.</string>
+    <!-- Library / scanning -->
+    <string name="add_folder">Add folder</string>
+    <string name="library_empty_title">Add your first folder</string>
+    <string name="library_empty_body">Choose a folder with your movies and shows. Lumen scans it and keeps it up to date.</string>
+    <string name="library_no_videos">No videos found in your folders yet.</string>
+    <string name="library_count">%1$d videos</string>
+    <string name="library_folder_already_added">That folder is already part of your library.</string>
+    <string name="library_folder_add_failed">Couldn\'t add that folder. Try picking it again.</string>
+    <string name="scan_scanning">Scanning your library…</string>
+    <string name="scan_found">%1$d videos found</string>
+    <string name="scan_in_folder">%1$d videos found in %2$s</string>
 
-    <!-- Library -->
+    <!-- Home -->
+    <string name="home_recently_added">Recently added</string>
+
+    <!-- Library screen -->
     <string name="library_title">Library</string>
-    <string name="library_filter_all">All</string>
-    <string name="library_filter_movies">Movies</string>
-    <string name="library_filter_shows">TV shows</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
+    <string name="settings_library">Library</string>
+    <string name="settings_no_folders">No folders added yet</string>
+    <string name="settings_rescan">Rescan now</string>
+    <string name="settings_library_hint">Removing a folder only removes it from Lumen. Your videos are never deleted.</string>
+    <string name="settings_remove_folder">Remove %1$s</string>
+    <string name="settings_folder_failed">Can\'t access this folder. Remove it and add it again.</string>
+    <string name="settings_folder_last_scan">Scanned %1$s</string>
+    <string name="settings_folder_never_scanned">Not scanned yet</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_theme_mode">Theme</string>
     <string name="settings_mode_system">System</string>

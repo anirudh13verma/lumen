@@ -3,37 +3,31 @@ package app.lumen.ui.library
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.lumen.R
+import app.lumen.data.scan.ScanState
+import app.lumen.ui.components.EmptyLibraryCard
 import app.lumen.ui.components.PosterCard
-import app.lumen.ui.sample.SampleItem
-
-private val SamplePosters = List(24) { SampleItem("Sample Title ${it + 1}", if (it % 3 == 0) "2024" else "2022") }
+import app.lumen.ui.components.ScanStatusCard
+import app.lumen.ui.components.rememberFileSize
 
 @Composable
-fun LibraryScreen(modifier: Modifier = Modifier) {
-    var filter by rememberSaveable { mutableStateOf(0) }
-    val filters = listOf(
-        R.string.library_filter_all,
-        R.string.library_filter_movies,
-        R.string.library_filter_shows,
-    )
+fun LibraryScreen(
+    state: LibraryUiState,
+    onAddFolder: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (!state.loaded) return
 
     Column(modifier = modifier.fillMaxSize()) {
         Text(
@@ -41,18 +35,31 @@ fun LibraryScreen(modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
         )
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            filters.forEachIndexed { index, labelRes ->
-                FilterChip(
-                    selected = filter == index,
-                    onClick = { filter = index },
-                    label = { Text(stringResource(labelRes)) },
-                )
-            }
+
+        if (state.folders.isEmpty()) {
+            EmptyLibraryCard(
+                onAddFolder = onAddFolder,
+                modifier = Modifier.padding(16.dp),
+            )
+            return@Column
         }
+
+        val scan = state.scan
+        if (scan is ScanState.Scanning) {
+            ScanStatusCard(scan, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+        } else {
+            Text(
+                text = if (state.files.isEmpty()) {
+                    stringResource(R.string.library_no_videos)
+                } else {
+                    stringResource(R.string.library_count, state.files.size)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
+        }
+
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 110.dp),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
@@ -60,7 +67,9 @@ fun LibraryScreen(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize(),
         ) {
-            items(SamplePosters) { PosterCard(it) }
+            items(state.files, key = { it.uri }) { file ->
+                PosterCard(title = file.title, subtitle = rememberFileSize(file.sizeBytes))
+            }
         }
     }
 }
