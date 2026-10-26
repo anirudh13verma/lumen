@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import app.lumen.R
 import app.lumen.data.model.LibraryFolder
 import app.lumen.data.scan.ScanState
+import app.lumen.data.scan.isBusy
 
 /** Manage which folders are part of the library. Lives on the Settings screen. */
 @Composable
@@ -64,7 +65,7 @@ fun LibrarySettingsSection(
             }
             OutlinedButton(
                 onClick = onRescan,
-                enabled = folders.isNotEmpty() && scan !is ScanState.Scanning,
+                enabled = folders.isNotEmpty() && !scan.isBusy,
             ) {
                 Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text(stringResource(R.string.settings_rescan), modifier = Modifier.padding(start = 8.dp))

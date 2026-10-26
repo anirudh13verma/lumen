@@ -11,9 +11,19 @@
     <string name="library_empty_title">Add your first folder</string>
     <string name="library_empty_body">Choose a folder with your movies and shows. Lumen scans it and keeps it up to date.</string>
     <string name="library_no_videos">No videos found in your folders yet.</string>
-    <string name="library_count">%1$d videos</string>
+    <plurals name="library_item_count">
+        <item quantity="one">%1$d title</item>
+        <item quantity="other">%1$d titles</item>
+    </plurals>
+    <plurals name="episode_count">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
+    <string name="item_year">%1$d</string>
     <string name="library_folder_already_added">That folder is already part of your library.</string>
     <string name="library_folder_add_failed">Couldn\'t add that folder. Try picking it again.</string>
+    <string name="scan_fetching_posters">Fetching posters…</string>
+    <string name="scan_fetching_progress">%1$d of %2$d videos</string>
     <string name="scan_scanning">Scanning your library…</string>
     <string name="scan_found">%1$d videos found</string>
     <string name="scan_in_folder">%1$d videos found in %2$s</string>
@@ -34,6 +44,11 @@
     <string name="settings_folder_failed">Can\'t access this folder. Remove it and add it again.</string>
     <string name="settings_folder_last_scan">Scanned %1$s</string>
     <string name="settings_folder_never_scanned">Not scanned yet</string>
+    <string name="settings_metadata">Posters and details</string>
+    <string name="settings_metadata_hint">Lumen looks up posters and titles on TMDB using your file names. If a poster looks wrong, refetch everything.</string>
+    <string name="settings_metadata_no_key">No TMDB API key in this build, so posters are turned off. See the README for how to add one.</string>
+    <string name="settings_refetch">Refetch posters</string>
+    <string name="tmdb_attribution">This product uses the TMDB API but is not endorsed or certified by TMDB.</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_theme_mode">Theme</string>
     <string name="settings_mode_system">System</string>

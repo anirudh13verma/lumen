@@ -27,6 +27,10 @@ class ScanScheduler(context: Context) {
     val state: Flow<ScanState> = workManager.getWorkInfosForUniqueWorkFlow(UniqueName).map { infos ->
         val running = infos.firstOrNull { it.state == WorkInfo.State.RUNNING }
         when {
+            running?.progress?.getString(ScanWorker.KeyPhase) == ScanWorker.PhaseMetadata -> ScanState.FetchingMetadata(
+                done = running.progress.getInt(ScanWorker.KeyDone, 0),
+                total = running.progress.getInt(ScanWorker.KeyTotal, 0),
+            )
             running != null -> ScanState.Scanning(
                 folderName = running.progress.getString(ScanWorker.KeyFolder),
                 filesFound = running.progress.getInt(ScanWorker.KeyFiles, 0),

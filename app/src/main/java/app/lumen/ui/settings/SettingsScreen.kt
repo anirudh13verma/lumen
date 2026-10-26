@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import app.lumen.R
 import app.lumen.data.model.LibraryFolder
 import app.lumen.data.scan.ScanState
+import app.lumen.data.scan.isBusy
 import app.lumen.data.settings.ThemeMode
 import app.lumen.data.settings.ThemeSettings
 import app.lumen.ui.theme.SeedPresets
@@ -65,6 +66,8 @@ fun SettingsScreen(
     onAddFolder: () -> Unit,
     onRemoveFolder: (LibraryFolder) -> Unit,
     onRescan: () -> Unit,
+    tmdbConfigured: Boolean,
+    onRefetchMetadata: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val supportsSystemColors = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
@@ -88,6 +91,14 @@ fun SettingsScreen(
             onAddFolder = onAddFolder,
             onRemoveFolder = onRemoveFolder,
             onRescan = onRescan,
+        )
+
+        HorizontalDivider()
+
+        MetadataSettingsSection(
+            tmdbConfigured = tmdbConfigured,
+            busy = scan.isBusy,
+            onRefetch = onRefetchMetadata,
         )
 
         HorizontalDivider()

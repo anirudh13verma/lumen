@@ -4,9 +4,14 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [LibraryFolderEntity::class, MediaFileEntity::class],
-    version = 1,
-    exportSchema = false,
+    entities = [
+        LibraryFolderEntity::class,
+        MediaFileEntity::class,
+        MetadataEntity::class,
+        FileMatchEntity::class,
+    ],
+    version = 2,
+    exportSchema = true,
 )
 abstract class LumenDatabase : RoomDatabase() {
     abstract fun folderDao(): FolderDao

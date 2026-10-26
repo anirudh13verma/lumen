@@ -5,13 +5,30 @@ import android.content.Context
 import androidx.room.Room
 import app.lumen.data.LibraryRepository
 import app.lumen.data.db.LumenDatabase
+import app.lumen.data.db.Migration1To2
+import app.lumen.data.meta.MetadataRepository
+import app.lumen.data.meta.TmdbClient
 import app.lumen.data.scan.FolderScanner
 import app.lumen.data.scan.ScanScheduler
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
 /** Hand-rolled dependency container. Small enough that a DI framework would be overkill for now. */
 class AppContainer(context: Context) {
     private val database: LumenDatabase =
-        Room.databaseBuilder(context, LumenDatabase::class.java, "lumen.db").build()
+        Room.databaseBuilder(context, LumenDatabase::class.java, "lumen.db")
+            .addMigrations(Migration1To2)
+            .build()
+
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .build()
+
+    val metadataRepository = MetadataRepository(
+        database = database,
+        tmdb = TmdbClient(httpClient, BuildConfig.TMDB_API_KEY),
+    )
 
     val libraryRepository = LibraryRepository(
         context = context,

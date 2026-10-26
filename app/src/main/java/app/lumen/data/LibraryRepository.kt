@@ -9,7 +9,8 @@ import app.lumen.data.db.LibraryFolderEntity
 import app.lumen.data.db.LumenDatabase
 import app.lumen.data.db.MediaFileEntity
 import app.lumen.data.model.LibraryFolder
-import app.lumen.data.model.MediaFile
+import app.lumen.data.model.LibraryItem
+import app.lumen.data.model.buildLibraryItems
 import app.lumen.data.model.toModel
 import app.lumen.data.scan.FolderScanner
 import app.lumen.data.scan.ScannedFile
@@ -17,6 +18,8 @@ import app.lumen.data.scan.isSameOrInside
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
@@ -44,8 +47,12 @@ class LibraryRepository(
     val folders: Flow<List<LibraryFolder>> =
         folderDao.observeAll().map { list -> list.map { it.toModel() } }
 
-    val files: Flow<List<MediaFile>> =
-        mediaDao.observeAll().map { list -> list.map { it.toModel() } }
+    /** Movies and shows for display, with posters once matched. Grouping runs off the main thread. */
+    val items: Flow<List<LibraryItem>> =
+        mediaDao.observeRows()
+            .map { rows -> buildLibraryItems(rows) }
+            .flowOn(Dispatchers.Default)
+            .conflate()
 
     suspend fun getFolders(): List<LibraryFolderEntity> = folderDao.getAll()
 

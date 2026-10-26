@@ -23,12 +23,17 @@ import androidx.compose.ui.unit.dp
 import app.lumen.R
 import app.lumen.data.scan.ScanState
 
-/** Shown while a scan runs. The total is unknown up front, so the spinner is indeterminate. */
+/**
+ * Shown while a scan runs. Scanning has no known total, so its spinner is indeterminate;
+ * fetching posters knows how many files it has to do, so it shows real progress.
+ */
 @Composable
 fun ScanStatusCard(
-    scan: ScanState.Scanning,
+    scan: ScanState,
     modifier: Modifier = Modifier,
 ) {
+    if (scan is ScanState.Idle) return
+
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
@@ -38,17 +43,34 @@ fun ScanStatusCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 3.dp)
+            if (scan is ScanState.FetchingMetadata && scan.total > 0) {
+                CircularProgressIndicator(
+                    progress = { scan.done.toFloat() / scan.total },
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 3.dp,
+                )
+            } else {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 3.dp)
+            }
             Column {
                 Text(
-                    text = stringResource(R.string.scan_scanning),
+                    text = stringResource(
+                        if (scan is ScanState.FetchingMetadata) R.string.scan_fetching_posters else R.string.scan_scanning,
+                    ),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
-                val folderName = scan.folderName
-                if (folderName != null && scan.filesFound > 0) {
+                val detail = when (scan) {
+                    is ScanState.Scanning ->
+                        scan.folderName?.takeIf { scan.filesFound > 0 }
+                            ?.let { stringResource(R.string.scan_in_folder, scan.filesFound, it) }
+                    is ScanState.FetchingMetadata ->
+                        stringResource(R.string.scan_fetching_progress, scan.done, scan.total)
+                    ScanState.Idle -> null
+                }
+                if (detail != null) {
                     Text(
-                        text = stringResource(R.string.scan_in_folder, scan.filesFound, folderName),
+                        text = detail,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )

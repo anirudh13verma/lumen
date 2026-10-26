@@ -9,7 +9,7 @@ import app.lumen.LumenApplication
 import app.lumen.R
 import app.lumen.data.AddFolderResult
 import app.lumen.data.model.LibraryFolder
-import app.lumen.data.model.MediaFile
+import app.lumen.data.model.LibraryItem
 import app.lumen.data.scan.ScanState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,7 +22,8 @@ data class LibraryUiState(
     /** False until the first read from the database finishes, so empty states never flash. */
     val loaded: Boolean = false,
     val folders: List<LibraryFolder> = emptyList(),
-    val files: List<MediaFile> = emptyList(),
+    val items: List<LibraryItem> = emptyList(),
+    val tmdbConfigured: Boolean = true,
     val scan: ScanState = ScanState.Idle,
 )
 
@@ -34,10 +35,16 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
 
     val uiState: StateFlow<LibraryUiState> = combine(
         repository.folders,
-        repository.files,
+        repository.items,
         scheduler.state,
-    ) { folders, files, scan ->
-        LibraryUiState(loaded = true, folders = folders, files = files, scan = scan)
+    ) { folders, items, scan ->
+        LibraryUiState(
+            loaded = true,
+            folders = folders,
+            items = items,
+            tmdbConfigured = container.metadataRepository.isConfigured,
+            scan = scan,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryUiState())
 
     private val _message = MutableStateFlow<Int?>(null)
@@ -48,6 +55,14 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     fun scanOnLaunch() = scheduler.scan()
 
     fun rescan() = scheduler.scan()
+
+    /** Forgets all matches and looks everything up again, e.g. after fixing a wrong poster. */
+    fun refetchMetadata() {
+        viewModelScope.launch {
+            container.metadataRepository.clearMatches()
+            scheduler.scan()
+        }
+    }
 
     fun addFolder(treeUri: Uri) {
         viewModelScope.launch {

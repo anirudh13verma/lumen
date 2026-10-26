@@ -1,8 +1,28 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
+}
+
+/**
+ * TMDB API key for poster and metadata lookups. Never committed: put `TMDB_API_KEY=...` in the
+ * untracked local.properties (or set the TMDB_API_KEY environment variable). Without a key the app
+ * still builds and runs, it just skips posters.
+ */
+val tmdbApiKey: String = run {
+    val file = rootProject.file("local.properties")
+    val fromFile = if (file.exists()) {
+        Properties().apply { file.inputStream().use { load(it) } }.getProperty("TMDB_API_KEY")
+    } else {
+        null
+    }
+    (fromFile ?: System.getenv("TMDB_API_KEY") ?: "")
+        .trim()
+        .filter { it.isLetterOrDigit() || it == '-' || it == '_' } // it ends up inside generated source
 }
 
 android {
@@ -15,6 +35,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
     }
 
     buildTypes {
@@ -37,7 +58,13 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
+}
+
+ksp {
+    // Exported schemas let future versions use Room auto-migrations. Commit app/schemas/.
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -63,6 +90,10 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.work.runtime.ktx)
+
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
 }

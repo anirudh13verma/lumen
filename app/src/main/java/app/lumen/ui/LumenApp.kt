@@ -113,6 +113,8 @@ fun LumenApp(
                     onAddFolder = onAddFolder,
                     onRemoveFolder = libraryViewModel::removeFolder,
                     onRescan = libraryViewModel::rescan,
+                    tmdbConfigured = library.tmdbConfigured,
+                    onRefetchMetadata = libraryViewModel::refetchMetadata,
                 )
             }
         }

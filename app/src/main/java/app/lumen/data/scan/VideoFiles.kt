@@ -14,6 +14,10 @@ private val VideoExtensions = setOf(
 
 private fun extensionOf(name: String): String = name.substringAfterLast('.', "").lowercase()
 
+/** Removes a *known* video extension and leaves other dots alone ("Movie.Name.2024" is unchanged). */
+fun stripVideoExtension(fileName: String): String =
+    if (extensionOf(fileName) in VideoExtensions) fileName.substringBeforeLast('.') else fileName
+
 fun isVideoFile(name: String, mimeType: String?): Boolean {
     if (mimeType != null && mimeType.startsWith("video/")) return true
     return extensionOf(name) in VideoExtensions
@@ -26,11 +30,7 @@ private val Whitespace = Regex("\\s+")
  * The real filename parser (title, year, season, episode) arrives with TMDB matching.
  */
 fun cleanTitle(fileName: String): String {
-    // Only strip a *known* video extension. Stripping any short suffix would turn a
-    // extension-less "Movie.Name.2024" into "Movie Name".
-    val hasExtension = extensionOf(fileName) in VideoExtensions
-    val base = if (hasExtension) fileName.substringBeforeLast('.') else fileName
-    return base
+    return stripVideoExtension(fileName)
         .replace('.', ' ')
         .replace('_', ' ')
         .replace(Whitespace, " ")
