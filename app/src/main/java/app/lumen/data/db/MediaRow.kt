@@ -17,6 +17,9 @@ data class MediaRow(
     val metaTitle: String?,
     val metaYear: Int?,
     val posterPath: String?,
+    val backdropPath: String? = null,
+    val overview: String? = null,
+    val rating: Double? = null,
 )
 
 /** A file that still needs a TMDB lookup. */

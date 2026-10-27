@@ -15,3 +15,20 @@ fun itemSubtitle(item: LibraryItem): String = when {
     item.year != null -> stringResource(R.string.item_year, item.year)
     else -> rememberFileSize(item.totalSizeBytes)
 }
+
+/** Detail-screen meta line, e.g. "2022 · ★ 8.7 · 9 episodes". */
+@Composable
+fun itemMeta(item: LibraryItem): String {
+    val parts = buildList {
+        item.year?.let { add(it.toString()) }
+        item.rating?.let { add(stringResource(R.string.item_rating, it)) }
+        add(
+            if (item.kind == ItemKind.Show) {
+                pluralStringResource(R.plurals.episode_count, item.fileCount, item.fileCount)
+            } else {
+                rememberFileSize(item.totalSizeBytes)
+            },
+        )
+    }
+    return parts.joinToString(" · ")
+}

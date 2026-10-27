@@ -22,6 +22,22 @@ data class LibraryItem(
     val totalSizeBytes: Long,
     val addedAt: Long,
     val matched: Boolean,
+    val backdropPath: String? = null,
+    val overview: String? = null,
+    /** TMDB average vote, 0..10. */
+    val rating: Double? = null,
+    /** The video files behind this card, episodes in season/episode order. */
+    val files: List<ItemFile> = emptyList(),
+)
+
+/** One video file of a [LibraryItem]. Season and episode are null for movies. */
+data class ItemFile(
+    val uri: String,
+    val name: String,
+    val sizeBytes: Long,
+    val season: Int?,
+    val episode: Int?,
+    val episodeEnd: Int?,
 )
 
 private class ParsedRow(val row: MediaRow, val parsed: ParsedName)
@@ -82,5 +98,42 @@ private fun List<ParsedRow>.toItem(key: String): LibraryItem {
         totalSizeBytes = sumOf { it.row.sizeBytes },
         addedAt = maxOf { it.row.addedAt },
         matched = matched != null,
+        backdropPath = matched?.backdropPath,
+        overview = matched?.overview,
+        rating = matched?.rating,
+        files = sortedWith(compareBy({ it.parsed.season ?: 0 }, { it.parsed.episode ?: 0 }, { it.row.name }))
+            .map {
+                ItemFile(
+                    uri = it.row.documentUri,
+                    name = it.row.name,
+                    sizeBytes = it.row.sizeBytes,
+                    season = it.parsed.season,
+                    episode = it.parsed.episode,
+                    episodeEnd = it.parsed.episodeEnd,
+                )
+            },
     )
 }
+
+enum class LibraryFilter { All, Movies, Shows }
+
+/** Applies the Library screen's type chip and search text. Search ignores case and punctuation. */
+fun filterItems(items: List<LibraryItem>, filter: LibraryFilter, query: String): List<LibraryItem> {
+    val needle = normalizeTitle(query)
+    return items.filter { item ->
+        val kindOk = when (filter) {
+            LibraryFilter.All -> true
+            LibraryFilter.Movies -> item.kind == ItemKind.Movie
+            LibraryFilter.Shows -> item.kind == ItemKind.Show
+        }
+        kindOk && (needle.isEmpty() || normalizeTitle(item.title).contains(needle))
+    }
+}
+
+/** A season's episodes. [season] 0 collects files whose season is unknown. */
+data class SeasonGroup(val season: Int, val episodes: List<ItemFile>)
+
+fun groupBySeason(files: List<ItemFile>): List<SeasonGroup> =
+    files.groupBy { it.season ?: 0 }
+        .toSortedMap()
+        .map { (season, list) -> SeasonGroup(season, list.sortedWith(compareBy({ it.episode ?: Int.MAX_VALUE }, { it.name }))) }

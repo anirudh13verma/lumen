@@ -46,7 +46,8 @@ interface MediaDao {
         SELECT f.documentUri AS documentUri, f.name AS name, f.relativePath AS relativePath,
                f.sizeBytes AS sizeBytes, f.lastModified AS lastModified, f.addedAt AS addedAt,
                m.mediaKey AS mediaKey, m.kind AS kind, m.title AS metaTitle,
-               m.year AS metaYear, m.posterPath AS posterPath
+               m.year AS metaYear, m.posterPath AS posterPath,
+               m.backdropPath AS backdropPath, m.overview AS overview, m.rating AS rating
         FROM media_files f
         LEFT JOIN file_matches fm ON fm.documentUri = f.documentUri
         LEFT JOIN media_metadata m ON m.mediaKey = fm.mediaKey

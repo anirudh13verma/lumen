@@ -2,6 +2,7 @@ package app.lumen.ui.components
 
 import android.text.format.Formatter
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,12 +45,13 @@ fun rememberFileSize(bytes: Long): String {
 fun ArtworkPlaceholder(
     aspectRatio: Float,
     modifier: Modifier = Modifier,
+    rounded: Boolean = true,
 ) {
     val colors = MaterialTheme.colorScheme
     Box(
         modifier = modifier
             .aspectRatio(aspectRatio)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(if (rounded) 16.dp else 0.dp))
             .background(Brush.linearGradient(listOf(colors.primaryContainer, colors.tertiaryContainer))),
         contentAlignment = Alignment.Center,
     ) {
@@ -68,8 +70,14 @@ fun PosterCard(
     subtitle: String,
     posterUrl: String?,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
         Box {
             // The placeholder stays underneath, so it shows while the poster loads or if it fails.
             ArtworkPlaceholder(aspectRatio = 2f / 3f, modifier = Modifier.fillMaxWidth())

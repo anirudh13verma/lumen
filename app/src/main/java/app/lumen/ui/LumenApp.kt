@@ -20,15 +20,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import app.lumen.data.settings.ThemeSettings
+import app.lumen.data.model.LibraryItem
+import app.lumen.ui.detail.DetailScreen
 import app.lumen.ui.home.HomeScreen
 import app.lumen.ui.library.LibraryScreen
 import app.lumen.ui.library.LibraryViewModel
 import app.lumen.ui.navigation.Destination
+import app.lumen.ui.navigation.DetailRoute
 import app.lumen.ui.settings.SettingsScreen
 import app.lumen.ui.settings.SettingsViewModel
 
@@ -61,10 +66,14 @@ fun LumenApp(
         }
     }
 
+    // The detail screen is full-bleed, so the bottom bar hides there.
+    val onDetail = currentDestination?.route == DetailRoute.Pattern
+    val openItem: (LibraryItem) -> Unit = { navController.navigate(DetailRoute.create(it.id)) }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            NavigationBar {
+            if (!onDetail) NavigationBar {
                 Destination.entries.forEach { destination ->
                     val selected = currentDestination?.hierarchy?.any { it.route == destination.route } == true
                     NavigationBarItem(
@@ -94,10 +103,20 @@ fun LumenApp(
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(Destination.Home.route) {
-                HomeScreen(state = library, onAddFolder = onAddFolder)
+                HomeScreen(state = library, onAddFolder = onAddFolder, onItemClick = openItem)
             }
             composable(Destination.Library.route) {
-                LibraryScreen(state = library, onAddFolder = onAddFolder)
+                LibraryScreen(state = library, onAddFolder = onAddFolder, onItemClick = openItem)
+            }
+            composable(
+                route = DetailRoute.Pattern,
+                arguments = listOf(navArgument(DetailRoute.ArgId) { type = NavType.StringType }),
+            ) { entry ->
+                val itemId = DetailRoute.decode(entry.arguments?.getString(DetailRoute.ArgId))
+                DetailScreen(
+                    item = library.items.firstOrNull { it.id == itemId },
+                    onBack = { navController.popBackStack() },
+                )
             }
             composable(Destination.Settings.route) {
                 SettingsScreen(
