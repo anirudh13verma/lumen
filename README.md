@@ -17,7 +17,7 @@ An open-source Android media library app: point it at folders on your device and
 2. [x] Folder picking, incremental background scanning, Room database
 3. [x] Filename parser and TMDB metadata matching
 4. [x] Home, library, movie and show detail screens with real data
-5. [ ] Player (libmpv or Media3 behind a small `Player` interface)
+5. [x] Player (Media3 behind a small `PlaybackEngine` interface; libmpv can slot in later), resume and Continue watching
 6. [ ] "Fix match" screen, polish, animations
 
 ## Building

@@ -97,6 +97,26 @@ data class FileMatchEntity(
     val attemptedAt: Long,
 )
 
+/** How far the user got in one file. Removed together with the file. */
+@Entity(
+    tableName = "watch_progress",
+    foreignKeys = [
+        ForeignKey(
+            entity = MediaFileEntity::class,
+            parentColumns = ["documentUri"],
+            childColumns = ["documentUri"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class ProgressEntity(
+    @PrimaryKey val documentUri: String,
+    val positionMs: Long,
+    val durationMs: Long,
+    val completed: Boolean,
+    val updatedAt: Long,
+)
+
 object MatchStatus {
     const val Matched = 1
     const val NotFound = 2

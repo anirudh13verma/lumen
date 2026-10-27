@@ -34,6 +34,8 @@ import app.lumen.ui.library.LibraryScreen
 import app.lumen.ui.library.LibraryViewModel
 import app.lumen.ui.navigation.Destination
 import app.lumen.ui.navigation.DetailRoute
+import app.lumen.ui.navigation.PlayerRoute
+import app.lumen.ui.player.PlayerScreen
 import app.lumen.ui.settings.SettingsScreen
 import app.lumen.ui.settings.SettingsViewModel
 
@@ -66,14 +68,17 @@ fun LumenApp(
         }
     }
 
-    // The detail screen is full-bleed, so the bottom bar hides there.
-    val onDetail = currentDestination?.route == DetailRoute.Pattern
+    // The detail screen is full-bleed and the player is fullscreen, so the bottom bar hides there.
+    val route = currentDestination?.route
+    val onPlayer = route == PlayerRoute.Pattern
+    val hideBottomBar = onPlayer || route == DetailRoute.Pattern
     val openItem: (LibraryItem) -> Unit = { navController.navigate(DetailRoute.create(it.id)) }
+    val openPlayer: (String, Long) -> Unit = { uri, startMs -> navController.navigate(PlayerRoute.create(uri, startMs)) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            if (!onDetail) NavigationBar {
+            if (!hideBottomBar) NavigationBar {
                 Destination.entries.forEach { destination ->
                     val selected = currentDestination?.hierarchy?.any { it.route == destination.route } == true
                     NavigationBarItem(
@@ -100,10 +105,15 @@ fun LumenApp(
         NavHost(
             navController = navController,
             startDestination = Destination.Home.route,
-            modifier = Modifier.padding(innerPadding),
+            modifier = if (onPlayer) Modifier else Modifier.padding(innerPadding),
         ) {
             composable(Destination.Home.route) {
-                HomeScreen(state = library, onAddFolder = onAddFolder, onItemClick = openItem)
+                HomeScreen(
+                    state = library,
+                    onAddFolder = onAddFolder,
+                    onItemClick = openItem,
+                    onContinueClick = { openPlayer(it.file.uri, it.progress.positionMs) },
+                )
             }
             composable(Destination.Library.route) {
                 LibraryScreen(state = library, onAddFolder = onAddFolder, onItemClick = openItem)
@@ -115,8 +125,29 @@ fun LumenApp(
                 val itemId = DetailRoute.decode(entry.arguments?.getString(DetailRoute.ArgId))
                 DetailScreen(
                     item = library.items.firstOrNull { it.id == itemId },
+                    progress = library.progress,
+                    onPlay = { file, startMs -> openPlayer(file.uri, startMs) },
                     onBack = { navController.popBackStack() },
                 )
+            }
+            composable(
+                route = PlayerRoute.Pattern,
+                arguments = listOf(
+                    navArgument(PlayerRoute.ArgId) { type = NavType.StringType },
+                    navArgument(PlayerRoute.ArgStart) {
+                        type = NavType.LongType
+                        defaultValue = 0L
+                    },
+                ),
+            ) { entry ->
+                val uri = PlayerRoute.decode(entry.arguments?.getString(PlayerRoute.ArgId))
+                if (uri != null) {
+                    PlayerScreen(
+                        documentUri = uri,
+                        startMs = entry.arguments?.getLong(PlayerRoute.ArgStart) ?: 0L,
+                        onExit = { navController.popBackStack() },
+                    )
+                }
             }
             composable(Destination.Settings.route) {
                 SettingsScreen(

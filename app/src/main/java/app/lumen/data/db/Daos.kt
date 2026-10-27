@@ -80,3 +80,12 @@ interface MediaDao {
     @Query("DELETE FROM media_metadata WHERE mediaKey NOT IN (SELECT mediaKey FROM file_matches WHERE mediaKey IS NOT NULL)")
     suspend fun pruneMetadata()
 }
+
+@Dao
+interface ProgressDao {
+    @Query("SELECT * FROM watch_progress")
+    fun observeAll(): Flow<List<ProgressEntity>>
+
+    @Upsert
+    suspend fun upsert(progress: ProgressEntity)
+}

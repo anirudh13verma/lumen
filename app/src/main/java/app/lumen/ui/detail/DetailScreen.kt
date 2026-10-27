@@ -1,6 +1,7 @@
 package app.lumen.ui.detail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,11 +17,13 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,6 +47,11 @@ import app.lumen.data.model.ItemFile
 import app.lumen.data.model.ItemKind
 import app.lumen.data.model.LibraryItem
 import app.lumen.data.model.groupBySeason
+import app.lumen.data.playback.PlayTarget
+import app.lumen.data.playback.Progress
+import app.lumen.data.playback.isResumable
+import app.lumen.data.playback.pickPlayTarget
+import app.lumen.data.playback.startPositionFor
 import app.lumen.ui.components.ArtworkPlaceholder
 import app.lumen.ui.components.itemMeta
 import app.lumen.ui.components.rememberFileSize
@@ -52,6 +60,8 @@ import coil.compose.AsyncImage
 @Composable
 fun DetailScreen(
     item: LibraryItem?,
+    progress: Map<String, Progress>,
+    onPlay: (file: ItemFile, startMs: Long) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -71,25 +81,21 @@ fun DetailScreen(
     val seasons = remember(item.files) { if (item.kind == ItemKind.Show) groupBySeason(item.files) else emptyList() }
     var selectedSeason by rememberSaveable(item.id) { mutableIntStateOf(seasons.firstOrNull()?.season ?: 0) }
     val currentSeason = seasons.firstOrNull { it.season == selectedSeason } ?: seasons.firstOrNull()
+    val target = remember(item.files, progress) { pickPlayTarget(item.files, progress) }
 
     LazyColumn(modifier = modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
         item(key = "header") { Header(item, onBack) }
 
         item(key = "play") {
-            Column(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+            Button(
+                onClick = { target?.let { onPlay(it.file, it.startMs) } },
+                enabled = target != null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
-                // Playback arrives with the player milestone.
-                Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Text(stringResource(R.string.detail_play), modifier = Modifier.padding(start = 8.dp))
-                }
-                Text(
-                    text = stringResource(R.string.detail_play_soon),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                Text(playLabel(item, target), modifier = Modifier.padding(start = 8.dp))
             }
         }
 
@@ -131,7 +137,9 @@ fun DetailScreen(
                     }
                 }
             }
-            items(currentSeason.episodes, key = { "ep:" + it.uri }) { file -> EpisodeRow(file) }
+            items(currentSeason.episodes, key = { "ep:" + it.uri }) { file ->
+                EpisodeRow(file, progress[file.uri]) { onPlay(file, startPositionFor(file, progress)) }
+            }
         } else if (item.kind == ItemKind.Movie) {
             item(key = "files-title") {
                 Text(
@@ -140,7 +148,9 @@ fun DetailScreen(
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
                 )
             }
-            items(item.files, key = { "file:" + it.uri }) { file -> FileRow(file) }
+            items(item.files, key = { "file:" + it.uri }) { file ->
+                FileRow(file, progress[file.uri]) { onPlay(file, startPositionFor(file, progress)) }
+            }
         }
     }
 }
@@ -184,7 +194,24 @@ private fun Header(item: LibraryItem, onBack: () -> Unit) {
 }
 
 @Composable
-private fun EpisodeRow(file: ItemFile) {
+private fun playLabel(item: LibraryItem, target: PlayTarget?): String {
+    val episode = target?.file?.episode
+    val season = target?.file?.season
+    val resume = target?.isResume == true
+    return when {
+        item.kind == ItemKind.Show && episode != null && season != null ->
+            stringResource(
+                if (resume) R.string.detail_resume_episode else R.string.detail_play_episode,
+                season,
+                episode,
+            )
+        resume -> stringResource(R.string.detail_resume)
+        else -> stringResource(R.string.detail_play)
+    }
+}
+
+@Composable
+private fun EpisodeRow(file: ItemFile, progress: Progress?, onClick: () -> Unit) {
     val episode = file.episode
     val end = file.episodeEnd
     val number = when {
@@ -193,18 +220,39 @@ private fun EpisodeRow(file: ItemFile) {
         else -> stringResource(R.string.detail_episode, episode)
     }
     ListItem(
+        modifier = Modifier.clickable(onClick = onClick),
         leadingContent = number?.let {
             { Text(it, style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(56.dp)) }
         },
         headlineContent = { Text(file.name, maxLines = 2, overflow = TextOverflow.Ellipsis) },
-        supportingContent = { Text(rememberFileSize(file.sizeBytes)) },
+        supportingContent = { FileDetails(file, progress) },
+        trailingContent = if (progress?.completed == true) {
+            { Icon(Icons.Rounded.CheckCircle, contentDescription = stringResource(R.string.detail_watched)) }
+        } else {
+            null
+        },
     )
 }
 
 @Composable
-private fun FileRow(file: ItemFile) {
+private fun FileRow(file: ItemFile, progress: Progress?, onClick: () -> Unit) {
     ListItem(
+        modifier = Modifier.clickable(onClick = onClick),
         headlineContent = { Text(file.name, maxLines = 2, overflow = TextOverflow.Ellipsis) },
-        supportingContent = { Text(rememberFileSize(file.sizeBytes)) },
+        supportingContent = { FileDetails(file, progress) },
     )
+}
+
+/** File size, plus a progress bar when the file is half-watched. */
+@Composable
+private fun FileDetails(file: ItemFile, progress: Progress?) {
+    Column {
+        Text(rememberFileSize(file.sizeBytes))
+        if (progress != null && progress.isResumable()) {
+            LinearProgressIndicator(
+                progress = { progress.fraction },
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            )
+        }
+    }
 }

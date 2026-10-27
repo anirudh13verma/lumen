@@ -47,7 +47,16 @@
     <string name="detail_back">Back</string>
     <string name="detail_missing">This title is no longer in your library.</string>
     <string name="detail_play">Play</string>
-    <string name="detail_play_soon">Playback arrives in a later update.</string>
+    <string name="detail_resume">Resume</string>
+    <string name="detail_play_episode">Play S%1$d · E%2$d</string>
+    <string name="detail_resume_episode">Resume S%1$d · E%2$d</string>
+    <string name="detail_watched">Watched</string>
+    <string name="home_continue_watching">Continue watching</string>
+    <string name="continue_episode">S%1$d · E%2$d</string>
+    <plurals name="continue_minutes_left">
+        <item quantity="one">%1$d min left</item>
+        <item quantity="other">%1$d min left</item>
+    </plurals>
     <string name="detail_no_overview">No description available.</string>
     <string name="detail_unmatched">Lumen couldn\'t find this title on TMDB, so there is no poster or description. Check that the file name includes the title and year.</string>
     <string name="detail_files">Files</string>

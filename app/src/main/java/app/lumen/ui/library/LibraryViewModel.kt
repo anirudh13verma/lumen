@@ -10,6 +10,7 @@ import app.lumen.R
 import app.lumen.data.AddFolderResult
 import app.lumen.data.model.LibraryFolder
 import app.lumen.data.model.LibraryItem
+import app.lumen.data.playback.Progress
 import app.lumen.data.scan.ScanState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,6 +25,7 @@ data class LibraryUiState(
     val folders: List<LibraryFolder> = emptyList(),
     val items: List<LibraryItem> = emptyList(),
     val tmdbConfigured: Boolean = true,
+    val progress: Map<String, Progress> = emptyMap(),
     val scan: ScanState = ScanState.Idle,
 )
 
@@ -37,13 +39,15 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
         repository.folders,
         repository.items,
         scheduler.state,
-    ) { folders, items, scan ->
+        container.playbackRepository.progress,
+    ) { folders, items, scan, progress ->
         LibraryUiState(
             loaded = true,
             folders = folders,
             items = items,
             tmdbConfigured = container.metadataRepository.isConfigured,
             scan = scan,
+            progress = progress,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryUiState())
 

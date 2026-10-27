@@ -21,10 +21,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.lumen.data.meta.TmdbImages
+import app.lumen.R
 import app.lumen.data.model.LibraryItem
+import app.lumen.data.playback.ContinueEntry
 import coil.compose.AsyncImage
 
 /** Full-width banner for the featured title: backdrop, fading into the page background. */
@@ -107,6 +111,44 @@ fun PosterRow(
                     posterUrl = TmdbImages.poster(item.posterPath),
                     onClick = { onItemClick(item) },
                     modifier = Modifier.width(120.dp),
+                )
+            }
+        }
+    }
+}
+
+/** "Continue watching": half-watched titles with a progress bar, newest first. */
+@Composable
+fun ContinueRow(
+    entries: List<ContinueEntry>,
+    onEntryClick: (ContinueEntry) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = stringResource(R.string.home_continue_watching),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(entries, key = { it.item.id }) { entry ->
+                val season = entry.file.season
+                val episode = entry.file.episode
+                val minutesLeft = ((entry.progress.durationMs - entry.progress.positionMs) / 60_000L)
+                    .toInt().coerceAtLeast(1)
+                ContinueWatchingCard(
+                    title = entry.item.title,
+                    subtitle = if (season != null && episode != null) {
+                        stringResource(R.string.continue_episode, season, episode)
+                    } else {
+                        pluralStringResource(R.plurals.continue_minutes_left, minutesLeft, minutesLeft)
+                    },
+                    progress = entry.progress.fraction,
+                    imageUrl = TmdbImages.backdrop(entry.item.backdropPath ?: entry.item.posterPath),
+                    onClick = { onEntryClick(entry) },
                 )
             }
         }

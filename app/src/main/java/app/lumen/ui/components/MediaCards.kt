@@ -115,11 +115,30 @@ fun ContinueWatchingCard(
     title: String,
     subtitle: String,
     progress: Float,
+    imageUrl: String?,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.width(240.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(
+        modifier = modifier
+            .width(240.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
         Box {
             ArtworkPlaceholder(aspectRatio = 16f / 9f, modifier = Modifier.fillMaxWidth())
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f)
+                        .clip(RoundedCornerShape(16.dp)),
+                )
+            }
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier

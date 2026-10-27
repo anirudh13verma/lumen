@@ -35,3 +35,20 @@ val Migration1To2 = object : Migration(1, 2) {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_file_matches_mediaKey` ON `file_matches` (`mediaKey`)")
     }
 }
+
+/** v2 -> v3: watch progress for resume and "Continue watching". */
+val Migration2To3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `watch_progress` (" +
+                "`documentUri` TEXT NOT NULL, " +
+                "`positionMs` INTEGER NOT NULL, " +
+                "`durationMs` INTEGER NOT NULL, " +
+                "`completed` INTEGER NOT NULL, " +
+                "`updatedAt` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`documentUri`), " +
+                "FOREIGN KEY(`documentUri`) REFERENCES `media_files`(`documentUri`) " +
+                "ON UPDATE NO ACTION ON DELETE CASCADE)",
+        )
+    }
+}

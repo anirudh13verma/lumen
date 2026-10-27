@@ -15,7 +15,10 @@ import androidx.compose.ui.unit.dp
 import app.lumen.R
 import app.lumen.data.model.ItemKind
 import app.lumen.data.model.LibraryItem
+import app.lumen.data.playback.ContinueEntry
+import app.lumen.data.playback.buildContinueWatching
 import app.lumen.data.scan.isBusy
+import app.lumen.ui.components.ContinueRow
 import app.lumen.ui.components.EmptyLibraryCard
 import app.lumen.ui.components.HeroBanner
 import app.lumen.ui.components.PosterRow
@@ -47,12 +50,14 @@ fun HomeScreen(
     state: LibraryUiState,
     onAddFolder: () -> Unit,
     onItemClick: (LibraryItem) -> Unit,
+    onContinueClick: (ContinueEntry) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (!state.loaded) return
 
     val scan = state.scan
     val sections = remember(state.items) { buildSections(state.items) }
+    val continueEntries = remember(state.items, state.progress) { buildContinueWatching(state.items, state.progress) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -94,6 +99,10 @@ fun HomeScreen(
                 }
             }
             return@LazyColumn
+        }
+
+        if (continueEntries.isNotEmpty()) {
+            item(key = "continue") { ContinueRow(continueEntries, onContinueClick) }
         }
 
         item(key = "recent") {

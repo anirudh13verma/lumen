@@ -9,11 +9,13 @@ import androidx.room.RoomDatabase
         MediaFileEntity::class,
         MetadataEntity::class,
         FileMatchEntity::class,
+        ProgressEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class LumenDatabase : RoomDatabase() {
     abstract fun folderDao(): FolderDao
     abstract fun mediaDao(): MediaDao
+    abstract fun progressDao(): ProgressDao
 }
