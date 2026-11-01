@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit
 class MetadataRepository(
     private val database: LumenDatabase,
     private val tmdb: TmdbClient,
+    private val omdb: OmdbClient,
 ) {
     private val mediaDao get() = database.mediaDao()
 
@@ -60,6 +61,54 @@ class MetadataRepository(
             onProgress(done, pending.size)
         }
         mediaDao.pruneMetadata()
+    }
+
+    /**
+     * Looks up title logos for matched titles that have none yet. Runs after matching; a few
+     * network failures in a row stop it and the rest wait for the next scan.
+     */
+    suspend fun fetchMissingLogos() {
+        if (!tmdb.isConfigured) return
+        var failures = 0
+        for (lookup in mediaDao.metadataNeedingLogo(MaxLogoLookupsPerRun)) {
+            val kind = MediaKind.entries.firstOrNull { it.key == lookup.kind } ?: continue
+            try {
+                val path = tmdb.logo(kind, lookup.tmdbId)
+                mediaDao.setLogo(lookup.mediaKey, path ?: "") // "" = checked, TMDB has none
+                failures = 0
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: TmdbAuthException) {
+                break
+            } catch (e: IOException) {
+                if (++failures >= MaxConsecutiveFailures) break
+            }
+        }
+    }
+
+    /**
+     * Looks up real IMDb ratings (TMDB id -> IMDb id -> OMDb) for matched titles. Needs an OMDb
+     * key; without one nothing happens and the UI falls back to TMDB's rating, labelled as TMDB.
+     * Titles without a rating are retried weekly; network trouble leaves them for the next scan.
+     */
+    suspend fun fetchMissingImdbRatings() {
+        if (!tmdb.isConfigured || !omdb.isConfigured) return
+        val retryBefore = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(RetryMissesAfterDays)
+        var failures = 0
+        for (lookup in mediaDao.metadataNeedingImdb(retryBefore, MaxImdbLookupsPerRun)) {
+            val kind = MediaKind.entries.firstOrNull { it.key == lookup.kind } ?: continue
+            try {
+                val rating = tmdb.fetchImdbId(kind, lookup.tmdbId)?.let { omdb.imdbRating(it) }
+                mediaDao.setImdbRating(lookup.mediaKey, rating, System.currentTimeMillis())
+                failures = 0
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: TmdbAuthException) {
+                break
+            } catch (e: IOException) {
+                if (++failures >= MaxConsecutiveFailures) break
+            }
+        }
     }
 
     /** Forgets every match so the next scan looks everything up again. */
@@ -112,7 +161,7 @@ class MetadataRepository(
         try {
             database.withTransaction {
                 if (match != null) {
-                    mediaDao.upsertMetadata(
+                    mediaDao.insertMetadataIfAbsent(
                         MetadataEntity(
                             mediaKey = match.mediaKey,
                             kind = match.kind.key,
@@ -146,5 +195,7 @@ class MetadataRepository(
     private companion object {
         const val RetryMissesAfterDays = 7L
         const val MaxConsecutiveFailures = 3
+        const val MaxLogoLookupsPerRun = 100
+        const val MaxImdbLookupsPerRun = 100
     }
 }

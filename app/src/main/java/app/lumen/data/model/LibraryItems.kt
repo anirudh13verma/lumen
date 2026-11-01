@@ -28,6 +28,10 @@ data class LibraryItem(
     val rating: Double? = null,
     /** The video files behind this card, episodes in season/episode order. */
     val files: List<ItemFile> = emptyList(),
+    /** TMDB path of the title logo (the title as designed on the poster), if one exists. */
+    val logoPath: String? = null,
+    /** Real IMDb rating (0..10) when an OMDb key is set; otherwise null and [rating] is TMDB's. */
+    val imdbRating: Double? = null,
 )
 
 /** One video file of a [LibraryItem]. Season and episode are null for movies. */
@@ -101,6 +105,8 @@ private fun List<ParsedRow>.toItem(key: String): LibraryItem {
         backdropPath = matched?.backdropPath,
         overview = matched?.overview,
         rating = matched?.rating,
+        logoPath = matched?.logoPath?.takeIf { it.isNotEmpty() },
+        imdbRating = matched?.imdbRating,
         files = sortedWith(compareBy({ it.parsed.season ?: 0 }, { it.parsed.episode ?: 0 }, { it.row.name }))
             .map {
                 ItemFile(

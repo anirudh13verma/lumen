@@ -7,8 +7,11 @@ import app.lumen.data.LibraryRepository
 import app.lumen.data.db.LumenDatabase
 import app.lumen.data.db.Migration1To2
 import app.lumen.data.db.Migration2To3
+import app.lumen.data.db.Migration3To4
+import app.lumen.data.db.Migration4To5
 import app.lumen.data.playback.PlaybackRepository
 import app.lumen.data.meta.MetadataRepository
+import app.lumen.data.meta.OmdbClient
 import app.lumen.data.meta.TmdbClient
 import app.lumen.data.scan.FolderScanner
 import app.lumen.data.scan.ScanScheduler
@@ -22,7 +25,7 @@ import java.util.concurrent.TimeUnit
 class AppContainer(context: Context) {
     private val database: LumenDatabase =
         Room.databaseBuilder(context, LumenDatabase::class.java, "lumen.db")
-            .addMigrations(Migration1To2, Migration2To3)
+            .addMigrations(Migration1To2, Migration2To3, Migration3To4, Migration4To5)
             .build()
 
     private val httpClient = OkHttpClient.Builder()
@@ -33,6 +36,7 @@ class AppContainer(context: Context) {
     val metadataRepository = MetadataRepository(
         database = database,
         tmdb = TmdbClient(httpClient, BuildConfig.TMDB_API_KEY),
+        omdb = OmdbClient(httpClient, BuildConfig.OMDB_API_KEY),
     )
 
     val libraryRepository = LibraryRepository(

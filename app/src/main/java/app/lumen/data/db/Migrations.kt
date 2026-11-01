@@ -52,3 +52,18 @@ val Migration2To3 = object : Migration(2, 3) {
         )
     }
 }
+
+/** v3 -> v4: title logos for the Home carousel. Existing rows start as "not looked up yet" (NULL). */
+val Migration3To4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `media_metadata` ADD COLUMN `logoPath` TEXT")
+    }
+}
+
+/** v4 -> v5: IMDb ratings (via OMDb). Existing titles are looked up on the next scan. */
+val Migration4To5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `media_metadata` ADD COLUMN `imdbRating` REAL")
+        db.execSQL("ALTER TABLE `media_metadata` ADD COLUMN `imdbCheckedAt` INTEGER NOT NULL DEFAULT 0")
+    }
+}

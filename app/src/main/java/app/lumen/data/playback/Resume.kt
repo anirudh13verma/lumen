@@ -83,3 +83,20 @@ fun buildContinueWatching(items: List<LibraryItem>, progress: Map<String, Progre
         }
         .take(limit)
 }
+
+/** One slide of the Home carousel: a title and what its Play button should start. */
+data class HeroEntry(val item: LibraryItem, val target: PlayTarget?)
+
+/**
+ * The titles for the Home carousel: what the user is in the middle of first, then the newest
+ * additions, at most [limit] in all. Titles with no artwork are skipped.
+ */
+fun buildHeroEntries(items: List<LibraryItem>, progress: Map<String, Progress>, limit: Int = 7): List<HeroEntry> {
+    val inProgress = buildContinueWatching(items, progress, limit).map { it.item }
+    val newest = items.sortedByDescending { it.addedAt }
+    return (inProgress + newest)
+        .filter { it.backdropPath != null || it.posterPath != null }
+        .distinctBy { it.id }
+        .take(limit)
+        .map { HeroEntry(it, pickPlayTarget(it.files, progress)) }
+}

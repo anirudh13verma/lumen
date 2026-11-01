@@ -11,7 +11,7 @@ import androidx.room.RoomDatabase
         FileMatchEntity::class,
         ProgressEntity::class,
     ],
-    version = 3,
+    version = 5,
     exportSchema = true,
 )
 abstract class LumenDatabase : RoomDatabase() {

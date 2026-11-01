@@ -25,6 +25,8 @@ class Media3Engine(context: Context) : PlaybackEngine {
         player.prepare()
     }
 
+    override fun seekTo(positionMs: Long) = player.seekTo(positionMs)
+
     override fun play() = player.play()
 
     override fun pause() = player.pause()

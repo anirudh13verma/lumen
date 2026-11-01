@@ -47,7 +47,8 @@ interface MediaDao {
                f.sizeBytes AS sizeBytes, f.lastModified AS lastModified, f.addedAt AS addedAt,
                m.mediaKey AS mediaKey, m.kind AS kind, m.title AS metaTitle,
                m.year AS metaYear, m.posterPath AS posterPath,
-               m.backdropPath AS backdropPath, m.overview AS overview, m.rating AS rating
+               m.backdropPath AS backdropPath, m.overview AS overview, m.rating AS rating,
+               m.logoPath AS logoPath, m.imdbRating AS imdbRating
         FROM media_files f
         LEFT JOIN file_matches fm ON fm.documentUri = f.documentUri
         LEFT JOIN media_metadata m ON m.mediaKey = fm.mediaKey
@@ -67,11 +68,31 @@ interface MediaDao {
     )
     suspend fun filesNeedingMatch(retryBefore: Long): List<PendingFile>
 
-    @Upsert
-    suspend fun upsertMetadata(metadata: MetadataEntity)
+    /** Never overwrites: an existing row may already hold a logo and rating that a fresh match lacks. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertMetadataIfAbsent(metadata: MetadataEntity)
 
     @Upsert
     suspend fun upsertMatches(matches: List<FileMatchEntity>)
+
+    @Query("SELECT mediaKey, kind, tmdbId FROM media_metadata WHERE logoPath IS NULL LIMIT :limit")
+    suspend fun metadataNeedingLogo(limit: Int): List<LogoLookup>
+
+    @Query("UPDATE media_metadata SET logoPath = :logoPath WHERE mediaKey = :mediaKey")
+    suspend fun setLogo(mediaKey: String, logoPath: String)
+
+    /** Titles never checked, plus ones with no rating that were last checked before [retryBefore]. */
+    @Query(
+        """
+        SELECT mediaKey, kind, tmdbId FROM media_metadata
+        WHERE imdbCheckedAt = 0 OR (imdbRating IS NULL AND imdbCheckedAt < :retryBefore)
+        LIMIT :limit
+        """,
+    )
+    suspend fun metadataNeedingImdb(retryBefore: Long, limit: Int): List<ImdbLookup>
+
+    @Query("UPDATE media_metadata SET imdbRating = :rating, imdbCheckedAt = :at WHERE mediaKey = :mediaKey")
+    suspend fun setImdbRating(mediaKey: String, rating: Double?, at: Long)
 
     @Query("DELETE FROM file_matches")
     suspend fun clearMatches()

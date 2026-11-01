@@ -1,5 +1,6 @@
 package app.lumen.data.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -63,6 +64,12 @@ data class MetadataEntity(
     val backdropPath: String?,
     val rating: Double?,
     val updatedAt: Long,
+    /** Title logo: null = not looked up yet, "" = TMDB has none, otherwise a TMDB image path. */
+    val logoPath: String? = null,
+    /** Real IMDb rating via OMDb; null when unavailable or no OMDb key. */
+    val imdbRating: Double? = null,
+    /** When the IMDb rating was last looked up; 0 = never. */
+    @ColumnInfo(defaultValue = "0") val imdbCheckedAt: Long = 0,
 )
 
 /**

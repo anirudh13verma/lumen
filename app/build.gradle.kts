@@ -9,21 +9,24 @@ plugins {
 }
 
 /**
- * TMDB API key for poster and metadata lookups. Never committed: put `TMDB_API_KEY=...` in the
- * untracked local.properties (or set the TMDB_API_KEY environment variable). Without a key the app
- * still builds and runs, it just skips posters.
+ * API keys for poster and rating lookups. Never committed: put `TMDB_API_KEY=...` (and optionally
+ * `OMDB_API_KEY=...`) in the untracked local.properties, or set them as environment variables.
+ * Without keys the app still builds and runs; it just shows less artwork and no IMDb ratings.
  */
-val tmdbApiKey: String = run {
+fun apiKey(name: String): String {
     val file = rootProject.file("local.properties")
     val fromFile = if (file.exists()) {
-        Properties().apply { file.inputStream().use { load(it) } }.getProperty("TMDB_API_KEY")
+        Properties().apply { file.inputStream().use { load(it) } }.getProperty(name)
     } else {
         null
     }
-    (fromFile ?: System.getenv("TMDB_API_KEY") ?: "")
+    return (fromFile ?: System.getenv(name) ?: "")
         .trim()
         .filter { it.isLetterOrDigit() || it == '-' || it == '_' } // it ends up inside generated source
 }
+
+val tmdbApiKey = apiKey("TMDB_API_KEY")
+val omdbApiKey = apiKey("OMDB_API_KEY")
 
 android {
     namespace = "app.lumen"
@@ -36,6 +39,7 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
+        buildConfigField("String", "OMDB_API_KEY", "\"$omdbApiKey\"")
     }
 
     buildTypes {

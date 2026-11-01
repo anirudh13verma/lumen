@@ -20,6 +20,8 @@ data class MediaRow(
     val backdropPath: String? = null,
     val overview: String? = null,
     val rating: Double? = null,
+    val logoPath: String? = null,
+    val imdbRating: Double? = null,
 )
 
 /** A file that still needs a TMDB lookup. */
@@ -27,4 +29,18 @@ data class PendingFile(
     val documentUri: String,
     val name: String,
     val relativePath: String,
+)
+
+/** A matched title whose IMDb rating should be looked up. */
+data class ImdbLookup(
+    val mediaKey: String,
+    val kind: String,
+    val tmdbId: Int,
+)
+
+/** A matched title that has not had its logo looked up yet. */
+data class LogoLookup(
+    val mediaKey: String,
+    val kind: String,
+    val tmdbId: Int,
 )

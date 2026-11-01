@@ -31,6 +31,11 @@ object TmdbImages {
     fun poster(path: String?): String? = path?.let { "${Base}w342$it" }
 
     fun backdrop(path: String?): String? = path?.let { "${Base}w780$it" }
+
+    /** Large backdrop for the full-width hero. */
+    fun backdropLarge(path: String?): String? = path?.let { "${Base}w1280$it" }
+
+    fun logo(path: String?): String? = path?.takeIf { it.isNotEmpty() }?.let { "${Base}w500$it" }
 }
 
 /**
@@ -69,4 +74,22 @@ fun pickBest(candidates: List<TmdbMatch>, queryTitle: String, queryYear: Int?): 
 
     val ratio = minOf(topTitle.length, query.length).toDouble() / maxOf(topTitle.length, query.length)
     return top.takeIf { ratio >= 0.6 }
+}
+
+/** One title logo offered by TMDB. [language] is an ISO 639-1 code, or null for language-neutral art. */
+data class LogoCandidate(val path: String, val language: String?, val voteAverage: Double)
+
+/**
+ * Picks the logo to show: English first, then language-neutral, then anything else; the best-rated
+ * within each group. SVG logos are skipped because the image loader here only decodes bitmaps.
+ */
+fun pickLogo(candidates: List<LogoCandidate>): String? {
+    val usable = candidates.filter { !it.path.endsWith(".svg", ignoreCase = true) }
+    fun rank(c: LogoCandidate) = when (c.language) {
+        "en" -> 0
+        null -> 1
+        else -> 2
+    }
+    return usable.sortedWith(compareBy<LogoCandidate> { rank(it) }.thenByDescending { it.voteAverage })
+        .firstOrNull()?.path
 }

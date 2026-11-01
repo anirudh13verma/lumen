@@ -11,6 +11,8 @@ interface PlaybackEngine {
     /** Opens [uri] (a SAF content URI) and starts preparing at [startMs]. Does not start playing. */
     fun load(uri: String, startMs: Long)
 
+    fun seekTo(positionMs: Long)
+
     fun play()
     fun pause()
 

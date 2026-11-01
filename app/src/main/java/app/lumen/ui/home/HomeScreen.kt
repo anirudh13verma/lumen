@@ -1,6 +1,7 @@
 package app.lumen.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -16,11 +17,13 @@ import app.lumen.R
 import app.lumen.data.model.ItemKind
 import app.lumen.data.model.LibraryItem
 import app.lumen.data.playback.ContinueEntry
+import app.lumen.data.playback.PlayTarget
+import app.lumen.data.playback.buildHeroEntries
 import app.lumen.data.playback.buildContinueWatching
 import app.lumen.data.scan.isBusy
 import app.lumen.ui.components.ContinueRow
 import app.lumen.ui.components.EmptyLibraryCard
-import app.lumen.ui.components.HeroBanner
+import app.lumen.ui.components.HeroCarousel
 import app.lumen.ui.components.PosterRow
 import app.lumen.ui.components.ScanStatusCard
 import app.lumen.ui.library.LibraryUiState
@@ -28,7 +31,6 @@ import app.lumen.ui.library.LibraryUiState
 private const val RowLimit = 20
 
 private class HomeSections(
-    val featured: LibraryItem?,
     val recent: List<LibraryItem>,
     val movies: List<LibraryItem>,
     val shows: List<LibraryItem>,
@@ -37,8 +39,6 @@ private class HomeSections(
 private fun buildSections(items: List<LibraryItem>): HomeSections {
     val recent = items.sortedByDescending { it.addedAt }
     return HomeSections(
-        // Newest title that has a backdrop to show; the banner is skipped when none do.
-        featured = recent.firstOrNull { it.backdropPath != null },
         recent = recent.take(RowLimit),
         movies = items.filter { it.kind == ItemKind.Movie }.sortedBy { it.title.lowercase() }.take(RowLimit),
         shows = items.filter { it.kind == ItemKind.Show }.sortedBy { it.title.lowercase() }.take(RowLimit),
@@ -51,6 +51,7 @@ fun HomeScreen(
     onAddFolder: () -> Unit,
     onItemClick: (LibraryItem) -> Unit,
     onContinueClick: (ContinueEntry) -> Unit,
+    onHeroPlay: (PlayTarget) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (!state.loaded) return
@@ -58,9 +59,14 @@ fun HomeScreen(
     val scan = state.scan
     val sections = remember(state.items) { buildSections(state.items) }
     val continueEntries = remember(state.items, state.progress) { buildContinueWatching(state.items, state.progress) }
+    val heroEntries = remember(state.items, state.progress) { buildHeroEntries(state.items, state.progress) }
+
+    // The carousel gets half of what is left after the status bar and bottom navigation.
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+    val heroHeight = maxHeight * 0.5f
 
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
@@ -74,15 +80,17 @@ fun HomeScreen(
             return@LazyColumn
         }
 
-        sections.featured?.let { featured ->
-            item(key = "hero") { HeroBanner(item = featured, onClick = { onItemClick(featured) }) }
+        if (heroEntries.isNotEmpty()) {
+            item(key = "hero") {
+                HeroCarousel(entries = heroEntries, height = heroHeight, onOpen = onItemClick, onPlay = onHeroPlay)
+            }
         }
 
         if (scan.isBusy) {
             item(key = "scan") {
                 ScanStatusCard(
                     scan,
-                    Modifier.padding(start = 16.dp, end = 16.dp, top = if (sections.featured == null) 16.dp else 0.dp),
+                    Modifier.padding(start = 16.dp, end = 16.dp, top = if (heroEntries.isEmpty()) 16.dp else 0.dp),
                 )
             }
         }
@@ -118,5 +126,6 @@ fun HomeScreen(
                 PosterRow(stringResource(R.string.home_shows), sections.shows, onItemClick)
             }
         }
-    }
+    } // LazyColumn
+    } // BoxWithConstraints
 }

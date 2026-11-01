@@ -45,22 +45,68 @@ class TmdbClient(
                 }
                 .build()
 
-            coroutineContext.ensureActive()
-            val body = http.newCall(Request.Builder().url(url).build()).execute().use { response ->
-                when {
-                    response.code == 401 -> throw TmdbAuthException()
-                    !response.isSuccessful -> throw IOException("TMDB returned HTTP ${response.code}")
-                    else -> response.body?.string() ?: throw IOException("TMDB returned an empty response")
-                }
-            }
-
-            val parsed = try {
-                json.decodeFromString<SearchResponse>(body)
-            } catch (e: kotlinx.serialization.SerializationException) {
-                throw IOException("Unreadable TMDB response", e)
-            }
-            parsed.results.map { it.toMatch(kind) }
+            fetch<SearchResponse>(url).results.map { it.toMatch(kind) }
         }
+
+    /** The IMDb id ("tt1375666") of a film or show, if TMDB knows it. */
+    suspend fun fetchImdbId(kind: MediaKind, id: Int): String? = withContext(Dispatchers.IO) {
+        val url = "https://api.themoviedb.org/3/${kind.key}/$id/external_ids".toHttpUrl().newBuilder()
+            .addQueryParameter("api_key", apiKey)
+            .build()
+        fetch<ExternalIds>(url).imdbId?.takeIf { it.isNotBlank() }
+    }
+
+    private suspend inline fun <reified T> fetch(url: okhttp3.HttpUrl): T {
+        coroutineContext.ensureActive()
+        val body = http.newCall(Request.Builder().url(url).build()).execute().use { response ->
+            when {
+                response.code == 401 -> throw TmdbAuthException()
+                !response.isSuccessful -> throw IOException("TMDB returned HTTP ${response.code}")
+                else -> response.body?.string() ?: throw IOException("TMDB returned an empty response")
+            }
+        }
+        return try {
+            json.decodeFromString<T>(body)
+        } catch (e: kotlinx.serialization.SerializationException) {
+            throw IOException("Unreadable TMDB response", e)
+        }
+    }
+
+    @Serializable
+    private data class ExternalIds(@SerialName("imdb_id") val imdbId: String? = null)
+
+    /** The best title logo for a film or show, or null when TMDB has none. */
+    suspend fun logo(kind: MediaKind, id: Int): String? = withContext(Dispatchers.IO) {
+        val url = "https://api.themoviedb.org/3/${kind.key}/$id/images".toHttpUrl().newBuilder()
+            .addQueryParameter("api_key", apiKey)
+            .addQueryParameter("include_image_language", "en,null")
+            .build()
+
+        coroutineContext.ensureActive()
+        val body = http.newCall(Request.Builder().url(url).build()).execute().use { response ->
+            when {
+                response.code == 401 -> throw TmdbAuthException()
+                !response.isSuccessful -> throw IOException("TMDB returned HTTP ${response.code}")
+                else -> response.body?.string() ?: throw IOException("TMDB returned an empty response")
+            }
+        }
+        val parsed = try {
+            json.decodeFromString<ImagesResponse>(body)
+        } catch (e: kotlinx.serialization.SerializationException) {
+            throw IOException("Unreadable TMDB response", e)
+        }
+        pickLogo(parsed.logos.map { LogoCandidate(it.filePath, it.language, it.voteAverage) })
+    }
+
+    @Serializable
+    private data class ImagesResponse(val logos: List<ImageEntry> = emptyList())
+
+    @Serializable
+    private data class ImageEntry(
+        @SerialName("file_path") val filePath: String,
+        @SerialName("iso_639_1") val language: String? = null,
+        @SerialName("vote_average") val voteAverage: Double = 0.0,
+    )
 
     @Serializable
     private data class SearchResponse(val results: List<SearchResult> = emptyList())

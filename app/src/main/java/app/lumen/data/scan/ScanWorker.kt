@@ -29,6 +29,8 @@ class ScanWorker(
         container.metadataRepository.matchPending { done, total ->
             setProgress(workDataOf(KeyPhase to PhaseMetadata, KeyDone to done, KeyTotal to total))
         }
+        container.metadataRepository.fetchMissingLogos()
+        container.metadataRepository.fetchMissingImdbRatings()
         return Result.success()
     }
 

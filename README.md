@@ -58,6 +58,14 @@ Posters and details come from [TMDB](https://www.themoviedb.org/). Each develope
 
    Alternatively set a `TMDB_API_KEY` environment variable (handy for CI).
 
+**Optional, for real IMDb ratings:** TMDB does not provide IMDb data, so Lumen can look ratings up through [OMDb](https://www.omdbapi.com/) (free key, 1,000 requests a day). Add it next to the other key:
+
+```
+OMDB_API_KEY=your_omdb_key_here
+```
+
+Without it the Home carousel shows TMDB's own rating in a blue "TMDB" box instead of the yellow "IMDb" one; the two are never mixed up.
+
 Without a key the app still builds and scans folders; it just shows placeholder artwork. Note that a key compiled into an APK can be extracted, so never reuse one that matters.
 
 Room exports its database schema to `app/schemas/`. Commit those files; they document each version.

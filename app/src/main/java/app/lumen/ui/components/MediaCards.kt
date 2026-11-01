@@ -73,9 +73,9 @@ fun PosterCard(
     onClick: (() -> Unit)? = null,
 ) {
     Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+        // No clip here: a rounded clip on the whole column cuts the first letters of the text
+        // under the bottom-left corner. Only the artwork is rounded.
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Box {
@@ -122,7 +122,6 @@ fun ContinueWatchingCard(
     Column(
         modifier = modifier
             .width(240.dp)
-            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {

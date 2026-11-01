@@ -26,6 +26,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import app.lumen.R
 import app.lumen.data.settings.ThemeSettings
 import app.lumen.data.model.LibraryItem
 import app.lumen.ui.detail.DetailScreen
@@ -113,6 +114,7 @@ fun LumenApp(
                     onAddFolder = onAddFolder,
                     onItemClick = openItem,
                     onContinueClick = { openPlayer(it.file.uri, it.progress.positionMs) },
+                    onHeroPlay = { openPlayer(it.file.uri, it.startMs) },
                 )
             }
             composable(Destination.Library.route) {
@@ -142,8 +144,20 @@ fun LumenApp(
             ) { entry ->
                 val uri = PlayerRoute.decode(entry.arguments?.getString(PlayerRoute.ArgId))
                 if (uri != null) {
+                    val playing = library.items.firstNotNullOfOrNull { item ->
+                        item.files.firstOrNull { it.uri == uri }?.let { item to it }
+                    }
+                    val season = playing?.second?.season
+                    val episode = playing?.second?.episode
+                    val title = when {
+                        playing == null -> ""
+                        season != null && episode != null ->
+                            playing.first.title + " · " + stringResource(R.string.continue_episode, season, episode)
+                        else -> playing.first.title
+                    }
                     PlayerScreen(
                         documentUri = uri,
+                        title = title,
                         startMs = entry.arguments?.getLong(PlayerRoute.ArgStart) ?: 0L,
                         onExit = { navController.popBackStack() },
                     )

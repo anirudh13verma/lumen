@@ -43,6 +43,15 @@
     <string name="filter_shows">Shows</string>
 
     <!-- Detail screen -->
+    <string name="player_close">Close player</string>
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_audio">Audio</string>
+    <string name="player_subtitles">Subtitles</string>
+    <string name="player_subtitles_off">Off</string>
+    <string name="player_track_n">Track %1$d</string>
+    <string name="player_no_tracks">No other tracks in this file.</string>
+    <string name="rating_value">%1$.1f</string>
     <string name="item_rating">★ %1$.1f</string>
     <string name="detail_back">Back</string>
     <string name="detail_missing">This title is no longer in your library.</string>
